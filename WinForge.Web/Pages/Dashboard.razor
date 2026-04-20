@@ -1,0 +1,114 @@
+@page "/"
+@using MudBlazor
+@inject IAuthStateService Auth
+@inject NavigationManager Nav
+
+<PageTitle>WinForge — Dashboard</PageTitle>
+
+@if (!Auth.IsLoggedIn)
+{
+    Nav.NavigateTo("/login");
+    return;
+}
+
+<MudText Typo="Typo.h4" Class="mb-1">👋 Welcome, @Auth.CurrentUser?.CompanyName</MudText>
+<MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">
+    Here's your production overview
+</MudText>
+
+<!-- KPI Cards -->
+<MudGrid Class="mb-6">
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="3" Class="pa-4 rounded-lg" Style="border-left:4px solid #1E3A5F">
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.ListAlt" Style="color:#1E3A5F;font-size:2.5rem;" />
+                <MudStack>
+                    <MudText Typo="Typo.h4"><b>0</b></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Total Orders</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="3" Class="pa-4 rounded-lg" Style="border-left:4px solid #2196F3">
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Engineering" Style="color:#2196F3;font-size:2.5rem;" />
+                <MudStack>
+                    <MudText Typo="Typo.h4"><b>0</b></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">In Production</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="3" Class="pa-4 rounded-lg" Style="border-left:4px solid #4CAF50">
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.People" Style="color:#4CAF50;font-size:2.5rem;" />
+                <MudStack>
+                    <MudText Typo="Typo.h4"><b>0</b></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Customers</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="3" Class="pa-4 rounded-lg" Style="border-left:4px solid #FF9800">
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Euro" Style="color:#FF9800;font-size:2.5rem;" />
+                <MudStack>
+                    <MudText Typo="Typo.h4"><b>€0</b></MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Revenue (Month)</MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<!-- Quick Actions -->
+<MudText Typo="Typo.h6" Class="mb-3">Quick Actions</MudText>
+<MudGrid Class="mb-6">
+    <MudItem xs="12" sm="6" md="3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                   Size="Size.Large" StartIcon="@Icons.Material.Filled.Add"
+                   Href="/orders/new" Class="py-4">
+            New Order
+        </MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                   Size="Size.Large" StartIcon="@Icons.Material.Filled.ContentCut"
+                   Href="/optimizer" Class="py-4">
+            Cut Optimizer
+        </MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                   Size="Size.Large" StartIcon="@Icons.Material.Filled.PersonAdd"
+                   Href="/customers/new" Class="py-4">
+            New Customer
+        </MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"
+                   Size="Size.Large" StartIcon="@Icons.Material.Filled.Assessment"
+                   Href="/orders" Class="py-4">
+            View All Orders
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<!-- Recent Orders placeholder -->
+<MudText Typo="Typo.h6" Class="mb-3">Recent Orders</MudText>
+<MudPaper Elevation="2" Class="pa-6 rounded-lg">
+    <MudStack AlignItems="AlignItems.Center" Class="py-8">
+        <MudIcon Icon="@Icons.Material.Filled.Inbox" Style="font-size:4rem;color:#ccc;" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary">No orders yet</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Create your first order to get started
+        </MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add" Href="/orders/new" Class="mt-2">
+            Create Order
+        </MudButton>
+    </MudStack>
+</MudPaper>

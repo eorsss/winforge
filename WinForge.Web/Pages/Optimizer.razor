@@ -1,0 +1,202 @@
+@page "/optimizer"
+@using MudBlazor
+@using WinForge.Shared.DTOs
+@inject IApiClient Api
+@inject IAuthStateService Auth
+@inject NavigationManager Nav
+
+<PageTitle>WinForge — Cut Optimizer</PageTitle>
+
+@if (!Auth.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+
+<MudText Typo="Typo.h4" Class="mb-1">✂️ Profile Cutting Optimizer</MudText>
+<MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">
+    Minimize material waste with First-Fit Decreasing algorithm
+</MudText>
+
+<MudGrid>
+    <!-- Input Panel -->
+    <MudItem xs="12" md="5">
+        <MudPaper Elevation="3" Class="pa-5 rounded-lg">
+            <MudText Typo="Typo.h6" Class="mb-4">⚙️ Settings</MudText>
+
+            <MudNumericField @bind-Value="_stockLength" Label="Stock Bar Length (mm)"
+                             Variant="Variant.Outlined" Class="mb-3" FullWidth="true"
+                             Min="1000" Max="20000" Step="500" />
+            <MudNumericField @bind-Value="_kerf" Label="Saw Kerf (mm)"
+                             Variant="Variant.Outlined" Class="mb-5" FullWidth="true"
+                             Min="0" Max="10" Step="0.5" />
+
+            <MudDivider Class="mb-4" />
+            <MudText Typo="Typo.h6" Class="mb-3">📐 Cut Pieces</MudText>
+
+            @foreach (var (piece, i) in _pieces.Select((p, i) => (p, i)))
+            {
+                <MudPaper Outlined="true" Class="pa-3 mb-2 rounded">
+                    <MudGrid>
+                        <MudItem xs="5">
+                            <MudTextField @bind-Value="piece.Label" Label="Label"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudNumericField @bind-Value="piece.LengthMm" Label="Length (mm)"
+                                             Variant="Variant.Outlined" Min="10" />
+                        </MudItem>
+                        <MudItem xs="2">
+                            <MudNumericField @bind-Value="piece.Qty" Label="Qty"
+                                             Variant="Variant.Outlined" Min="1" Max="999" />
+                        </MudItem>
+                        <MudItem xs="1" Style="display:flex;align-items:center;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error" Size="Size.Small"
+                                           OnClick="() => RemovePiece(i)" />
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Add" OnClick="AddPiece" Class="mb-4">
+                Add Piece
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       Size="Size.Large" StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                       OnClick="RunOptimizer" Disabled="_loading || !_pieces.Any()">
+                @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Optimize
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Result Panel -->
+    <MudItem xs="12" md="7">
+        @if (_result != null)
+        {
+            <!-- Summary Cards -->
+            <MudGrid Class="mb-4">
+                <MudItem xs="6" sm="3">
+                    <MudPaper Elevation="2" Class="pa-3 rounded text-center">
+                        <MudText Typo="Typo.h5" Color="Color.Primary"><b>@_result.TotalBarsUsed</b></MudText>
+                        <MudText Typo="Typo.caption">Bars Used</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Elevation="2" Class="pa-3 rounded text-center">
+                        <MudText Typo="Typo.h5" Color="Color.Success"><b>@((100 - _result.WastePercent).ToString("F1"))%</b></MudText>
+                        <MudText Typo="Typo.caption">Yield</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Elevation="2" Class="pa-3 rounded text-center">
+                        <MudText Typo="Typo.h5" Color="Color.Warning"><b>@_result.WastePercent%</b></MudText>
+                        <MudText Typo="Typo.caption">Waste</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="3">
+                    <MudPaper Elevation="2" Class="pa-3 rounded text-center">
+                        <MudText Typo="Typo.h5"><b>@(_result.TotalWasteMm.ToString("F0"))mm</b></MudText>
+                        <MudText Typo="Typo.caption">Total Waste</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <!-- Bar Visual Plans -->
+            @foreach (var bar in _result.BarPlans)
+            {
+                <MudPaper Elevation="2" Class="pa-4 mb-3 rounded-lg">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
+                        <MudText Typo="Typo.subtitle1"><b>Bar #@bar.BarNumber</b></MudText>
+                        <MudSpacer />
+                        <MudChip T="string" Size="Size.Small" Color="@(bar.WastePercent < 10 ? Color.Success : Color.Warning)">
+                            Waste: @bar.WastePercent%
+                        </MudChip>
+                    </MudStack>
+
+                    <!-- Visual bar -->
+                    <div style="width:100%;height:36px;background:#E3F2FD;border-radius:4px;position:relative;overflow:hidden;border:1px solid #90CAF9">
+                        @foreach (var cut in bar.Cuts)
+                        {
+                            var leftPct = cut.StartPositionMm / bar.StockLengthMm * 100;
+                            var widthPct = cut.LengthMm / bar.StockLengthMm * 100;
+                            <div style="position:absolute;left:@(leftPct.ToString("F2"))%;width:@(widthPct.ToString("F2"))%;
+                                        height:100%;background:#1E3A5F;border-right:2px solid #fff;
+                                        display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                <span style="color:white;font-size:10px;font-weight:bold;white-space:nowrap;padding:0 4px;">
+                                    @cut.Label (@cut.LengthMm.ToString("F0"))
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Cut list -->
+                    <MudSimpleTable Dense="true" Class="mt-2">
+                        <thead>
+                            <tr>
+                                <th>Label</th><th>Length (mm)</th><th>Start (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var cut in bar.Cuts)
+                            {
+                                <tr>
+                                    <td>@cut.Label</td>
+                                    <td>@cut.LengthMm.ToString("F0")</td>
+                                    <td>@cut.StartPositionMm.ToString("F0")</td>
+                                </tr>
+                            }
+                            <tr style="background:#FFF3E0">
+                                <td><i>Waste</i></td>
+                                <td>@bar.WasteMm.ToString("F0")</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+        }
+        else
+        {
+            <MudPaper Elevation="2" Class="pa-8 rounded-lg">
+                <MudStack AlignItems="AlignItems.Center" Class="py-8">
+                    <MudIcon Icon="@Icons.Material.Filled.ContentCut" Style="font-size:5rem;color:#ccc;" />
+                    <MudText Typo="Typo.h6" Color="Color.Secondary">Add pieces and click Optimize</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        The algorithm will minimize material waste automatically
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    private double _stockLength = 6000;
+    private double _kerf = 3.2;
+    private List<PieceInput> _pieces = [new("Top Rail", 1200, 4), new("Side Stile", 900, 8)];
+    private CuttingOptimizationResult? _result;
+    private bool _loading = false;
+
+    private void AddPiece() => _pieces.Add(new("", 1000, 1));
+    private void RemovePiece(int i) => _pieces.RemoveAt(i);
+
+    private async Task RunOptimizer()
+    {
+        _loading = true;
+        var request = new CuttingOptimizationRequest(
+            _stockLength, _kerf,
+            _pieces.Where(p => p.LengthMm > 0 && p.Qty > 0)
+                   .Select(p => new CutPieceRequest(p.Label, p.LengthMm, p.Qty))
+                   .ToList()
+        );
+        _result = await Api.OptimizeProfileCuttingAsync(request);
+        _loading = false;
+    }
+
+    private class PieceInput(string label, double lengthMm, int qty)
+    {
+        public string Label { get; set; } = label;
+        public double LengthMm { get; set; } = lengthMm;
+        public int Qty { get; set; } = qty;
+    }
+}

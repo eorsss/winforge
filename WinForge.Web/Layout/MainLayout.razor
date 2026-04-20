@@ -1,0 +1,79 @@
+@inherits LayoutComponentBase
+@using MudBlazor
+@inject IAuthStateService Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@if (!Auth.IsLoggedIn)
+{
+    @Body
+}
+else
+{
+    <MudLayout>
+        <MudAppBar Color="Color.Primary" Elevation="1">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit"
+                           Edge="Edge.Start" OnClick="ToggleDrawer" />
+            <MudText Typo="Typo.h6" Class="ml-2">WinForge</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.body2" Class="mr-3">@Auth.CurrentUser?.CompanyName</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                           OnClick="Logout" Title="Logout" />
+        </MudAppBar>
+
+        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+            <MudNavMenu>
+                <MudNavLink Href="/" Match="NavLinkMatch.All"
+                            Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+                <MudNavLink Href="/orders"
+                            Icon="@Icons.Material.Filled.ListAlt">Orders</MudNavLink>
+                <MudNavLink Href="/customers"
+                            Icon="@Icons.Material.Filled.People">Customers</MudNavLink>
+                <MudNavLink Href="/optimizer"
+                            Icon="@Icons.Material.Filled.ContentCut">Cut Optimizer</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
+
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+}
+
+@code {
+    private bool _drawerOpen = true;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1E3A5F",
+            Secondary = "#2196F3",
+            AppbarBackground = "#1E3A5F",
+            Background = "#F5F7FA",
+            Surface = "#FFFFFF",
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        Auth.OnChange += StateHasChanged;
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/login");
+    }
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    public void Dispose() => Auth.OnChange -= StateHasChanged;
+}

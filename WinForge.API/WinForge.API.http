@@ -1,0 +1,6 @@
+@WinForge.API_HostAddress = http://localhost:5195
+
+GET {{WinForge.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
