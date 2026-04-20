@@ -8,6 +8,7 @@ COPY ["WinForge.API/WinForge.API.csproj", "WinForge.API/"]
 COPY ["WinForge.Core/WinForge.Core.csproj", "WinForge.Core/"]
 COPY ["WinForge.Infrastructure/WinForge.Infrastructure.csproj", "WinForge.Infrastructure/"]
 COPY ["WinForge.Shared/WinForge.Shared.csproj", "WinForge.Shared/"]
+COPY ["WinForge.Web/WinForge.Web.csproj", "WinForge.Web/"]
 
 # Restore dependencies
 RUN dotnet restore
