@@ -24,7 +24,15 @@
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
 
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            loadBootResource: function (type, name, defaultUri, integrity) {
+                // Bu kısım sunucudaki (cPanel) dosya sıkıştırma kaynaklı integrity hatalarını engeller
+                return defaultUri;
+            }
+        });
+    </script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>
 </html>
